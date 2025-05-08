@@ -1,6 +1,7 @@
 package com.reliaquest.api.controller;
 
 import java.util.List;
+import java.util.Objects;
 
 import com.reliaquest.api.exception.ServiceUnavailableException;
 import com.reliaquest.api.model.Employee;
@@ -83,9 +84,9 @@ public class EmployeeController implements IEmployeeController<Employee, Employe
 
     public ResponseEntity<String> deleteEmployeeById(@PathVariable("id") String id) {
         try {
-            boolean deleted = employeeService.deleteEmployee(id);
-            if (deleted) {
-                return new ResponseEntity<>("Successfully deleted employee with id: " + id, HttpStatus.OK);
+            String employeeName = employeeService.deleteEmployee(id);
+            if (Objects.nonNull(employeeName)) {
+                return new ResponseEntity<>(employeeName, HttpStatus.OK);
             }
             return new ResponseEntity<>("Employee with id: " + id + " not found", HttpStatus.NOT_FOUND);
         } catch (ServiceUnavailableException e) {

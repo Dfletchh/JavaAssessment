@@ -10,7 +10,6 @@ import com.reliaquest.api.web.NetworkHandler;
 
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -83,10 +82,10 @@ public class EmployeeService {
         return employee;
     }
 
-    public boolean deleteEmployee(String id) throws ServiceUnavailableException {
+    public String deleteEmployee(String id) throws ServiceUnavailableException {
         Employee employee = getEmployeeById(id);
         if (employee == null) {
-            return false;
+            return null;
         }
 
         DeleteEmployeeInput input = new DeleteEmployeeInput();
@@ -96,9 +95,8 @@ public class EmployeeService {
         headers.setContentType(MediaType.APPLICATION_JSON);
         HttpEntity<DeleteEmployeeInput> request = new HttpEntity<>(input, headers);
 
-        restTemplate.exchange(serverUrl, HttpMethod.DELETE, request, String.class);
         Callable<ResponseEntity<String>> callable = () -> restTemplate.exchange(serverUrl, HttpMethod.DELETE, request, String.class);
-        ResponseEntity<String> response = NetworkHandler.call(callable, 3, 1000);
-        return true;
+        NetworkHandler.call(callable, 3, 1000);
+        return employee.getName();
     }
 }
