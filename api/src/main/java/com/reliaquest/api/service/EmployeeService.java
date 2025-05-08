@@ -1,9 +1,18 @@
 package com.reliaquest.api.service;
 
+import com.reliaquest.api.model.DeleteEmployeeInput;
 import com.reliaquest.api.model.Employee;
 import com.reliaquest.api.model.EmployeeInput;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.reliaquest.api.model.EmployeeResponse;
+import com.reliaquest.api.model.EmployeesResponse;
+
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.http.HttpHeaders;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.Comparator;
@@ -15,25 +24,18 @@ import java.util.stream.Collectors;
 public class EmployeeService {
 
     private final RestTemplate restTemplate;
-    private final String serverUrl = "http://localhost:8112/api/v1/";
+    private final String serverUrl = "http://localhost:8112/api/v1/employee";
 
-    @Autowired
     public EmployeeService(RestTemplate restTemplate) {
         this.restTemplate = restTemplate;
     }
 
-    /**
-     * Get all employees from the external API
-     */
     public List<Employee> getAllEmployees() {
-        // Make API call to external service to get all employees
-        Employee[] employees = restTemplate.getForObject(serverUrl, Employee[].class);
-        return List.of(employees != null ? employees : new Employee[0]);
+        EmployeesResponse response = restTemplate.getForObject(serverUrl, EmployeesResponse.class);
+        List<Employee> employees = response.getData();
+        return employees;
     }
 
-    /**
-     * Search employees by name
-     */
     public List<Employee> searchEmployeesByName(String searchString) {
         List<Employee> allEmployees = getAllEmployees();
         return allEmployees.stream()
@@ -41,20 +43,17 @@ public class EmployeeService {
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Get employee by ID
-     */
     public Employee getEmployeeById(String id) {
         try {
-            return restTemplate.getForObject(serverUrl + id, Employee.class);
+            EmployeeResponse response = restTemplate.getForObject(serverUrl + "/" + id, EmployeeResponse.class);
+            Employee employee = response.getData();
+            return employee;
         } catch (Exception e) {
+            // e.printStackTrace();
             return null;
         }
     }
 
-    /**
-     * Get the highest salary among all employees
-     */
     public Integer getHighestSalary() {
         List<Employee> allEmployees = getAllEmployees();
         return allEmployees.stream()
@@ -63,9 +62,6 @@ public class EmployeeService {
                 .orElse(0);
     }
 
-    /**
-     * Get the names of the top 10 highest earning employees
-     */
     public List<String> getTopTenHighestEarningEmployeeNames() {
         List<Employee> allEmployees = getAllEmployees();
         return allEmployees.stream()
@@ -75,30 +71,26 @@ public class EmployeeService {
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Create a new employee
-     */
     public Employee createEmployee(EmployeeInput employeeInput) {
-        Employee newEmployee = new Employee();
-        newEmployee.setId(UUID.randomUUID().toString());
-        newEmployee.setName(employeeInput.getName());
-        newEmployee.setSalary(employeeInput.getSalary());
-        newEmployee.setAge(employeeInput.getAge());
-        newEmployee.setProfileImage(employeeInput.getProfileImage());
-        
-        // Call external API to create the employee
-        return restTemplate.postForObject(serverUrl, newEmployee, Employee.class);
+        EmployeeResponse response = restTemplate.postForObject(serverUrl, employeeInput, EmployeeResponse.class);
+        Employee employee = response.getData();
+        return employee;
     }
 
-    /**
-     * Delete an employee by ID
-     */
     public boolean deleteEmployee(String id) {
-        try {
-            restTemplate.delete(serverUrl + id);
-            return true;
-        } catch (Exception e) {
+        Employee employee = getEmployeeById(id);
+        if (employee == null) {
             return false;
         }
+
+        DeleteEmployeeInput input = new DeleteEmployeeInput();
+        input.setName(employee.getName());
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        HttpEntity<DeleteEmployeeInput> request = new HttpEntity<>(input, headers);
+
+        restTemplate.exchange(serverUrl, HttpMethod.DELETE, request, String.class);
+        return true;
     }
 }
