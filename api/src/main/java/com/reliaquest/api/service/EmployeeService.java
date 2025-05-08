@@ -1,10 +1,12 @@
 package com.reliaquest.api.service;
 
+import com.reliaquest.api.exception.ServiceUnavailableException;
 import com.reliaquest.api.model.DeleteEmployeeInput;
 import com.reliaquest.api.model.Employee;
 import com.reliaquest.api.model.EmployeeInput;
 import com.reliaquest.api.model.EmployeeResponse;
 import com.reliaquest.api.model.EmployeesResponse;
+import com.reliaquest.api.web.NetworkHandler;
 
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
@@ -17,7 +19,7 @@ import org.springframework.web.client.RestTemplate;
 
 import java.util.Comparator;
 import java.util.List;
-import java.util.UUID;
+import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
 
 @Service
@@ -30,31 +32,34 @@ public class EmployeeService {
         this.restTemplate = restTemplate;
     }
 
-    public List<Employee> getAllEmployees() {
-        EmployeesResponse response = restTemplate.getForObject(serverUrl, EmployeesResponse.class);
+    public List<Employee> getAllEmployees() throws ServiceUnavailableException {
+        Callable<EmployeesResponse> callable = () -> restTemplate.getForObject(serverUrl, EmployeesResponse.class);
+        EmployeesResponse response = NetworkHandler.call(callable, 3, 1000);
         List<Employee> employees = response.getData();
         return employees;
     }
 
-    public List<Employee> searchEmployeesByName(String searchString) {
+    public List<Employee> searchEmployeesByName(String searchString) throws ServiceUnavailableException {
         List<Employee> allEmployees = getAllEmployees();
         return allEmployees.stream()
                 .filter(employee -> employee.getName().toLowerCase().contains(searchString.toLowerCase()))
                 .collect(Collectors.toList());
     }
 
-    public Employee getEmployeeById(String id) {
+    public Employee getEmployeeById(String id) throws ServiceUnavailableException {
         try {
-            EmployeeResponse response = restTemplate.getForObject(serverUrl + "/" + id, EmployeeResponse.class);
+            Callable<EmployeeResponse> callable = () -> restTemplate.getForObject(serverUrl + "/" + id, EmployeeResponse.class);
+            EmployeeResponse response = NetworkHandler.call(callable, 3, 1000);
             Employee employee = response.getData();
             return employee;
+        } catch (ServiceUnavailableException e) {
+            throw e;
         } catch (Exception e) {
-            // e.printStackTrace();
             return null;
         }
     }
 
-    public Integer getHighestSalary() {
+    public Integer getHighestSalary() throws ServiceUnavailableException {
         List<Employee> allEmployees = getAllEmployees();
         return allEmployees.stream()
                 .mapToInt(Employee::getSalary)
@@ -62,7 +67,7 @@ public class EmployeeService {
                 .orElse(0);
     }
 
-    public List<String> getTopTenHighestEarningEmployeeNames() {
+    public List<String> getTopTenHighestEarningEmployeeNames() throws ServiceUnavailableException {
         List<Employee> allEmployees = getAllEmployees();
         return allEmployees.stream()
                 .sorted(Comparator.comparingInt(Employee::getSalary).reversed())
@@ -71,13 +76,14 @@ public class EmployeeService {
                 .collect(Collectors.toList());
     }
 
-    public Employee createEmployee(EmployeeInput employeeInput) {
-        EmployeeResponse response = restTemplate.postForObject(serverUrl, employeeInput, EmployeeResponse.class);
+    public Employee createEmployee(EmployeeInput employeeInput) throws ServiceUnavailableException {
+        Callable<EmployeeResponse> callable = () -> restTemplate.postForObject(serverUrl, employeeInput, EmployeeResponse.class);
+        EmployeeResponse response = NetworkHandler.call(callable, 3, 1000);
         Employee employee = response.getData();
         return employee;
     }
 
-    public boolean deleteEmployee(String id) {
+    public boolean deleteEmployee(String id) throws ServiceUnavailableException {
         Employee employee = getEmployeeById(id);
         if (employee == null) {
             return false;
@@ -91,6 +97,8 @@ public class EmployeeService {
         HttpEntity<DeleteEmployeeInput> request = new HttpEntity<>(input, headers);
 
         restTemplate.exchange(serverUrl, HttpMethod.DELETE, request, String.class);
+        Callable<ResponseEntity<String>> callable = () -> restTemplate.exchange(serverUrl, HttpMethod.DELETE, request, String.class);
+        ResponseEntity<String> response = NetworkHandler.call(callable, 3, 1000);
         return true;
     }
 }
