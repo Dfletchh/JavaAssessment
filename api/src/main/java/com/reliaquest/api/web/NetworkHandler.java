@@ -4,6 +4,10 @@ import java.util.concurrent.Callable;
 
 import com.reliaquest.api.exception.ServiceUnavailableException;
 
+/*
+ * Simple retry wrapper for sanity check
+ * The Server app has intentional rate limiting enabled
+ */
 public class NetworkHandler {
     public static <T> T call(Callable<T> callable, int maxAttempts, int initialDelay) {
         int attempt = 0;
