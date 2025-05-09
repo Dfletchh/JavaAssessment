@@ -1,14 +1,12 @@
 package com.reliaquest.api.web;
 
-import java.util.concurrent.Callable;
-
 import com.reliaquest.api.exception.ServiceUnavailableException;
-
+import java.util.concurrent.Callable;
 
 /**
  * Provides a simple retry mechanism for network calls.
  * Note: The Server app has intentional rate limiting enabled
- * 
+ *
  * @param callable the callable to retry
  * @param retries the number of retries
  * @param delay the delay between retries in milliseconds

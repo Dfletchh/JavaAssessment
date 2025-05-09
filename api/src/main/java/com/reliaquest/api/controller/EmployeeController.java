@@ -1,12 +1,11 @@
 package com.reliaquest.api.controller;
 
-import java.util.List;
-import java.util.Objects;
-
 import com.reliaquest.api.exception.ServiceUnavailableException;
 import com.reliaquest.api.model.Employee;
 import com.reliaquest.api.model.EmployeeInput;
 import com.reliaquest.api.service.EmployeeService;
+import java.util.List;
+import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;

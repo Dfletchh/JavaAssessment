@@ -7,6 +7,11 @@ import com.reliaquest.api.model.EmployeeInput;
 import com.reliaquest.api.model.EmployeeResponse;
 import com.reliaquest.api.model.EmployeesResponse;
 import com.reliaquest.api.web.NetworkHandler;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Objects;
+import java.util.concurrent.Callable;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpEntity;
@@ -16,12 +21,6 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
-
-import java.util.Comparator;
-import java.util.List;
-import java.util.Objects;
-import java.util.concurrent.Callable;
-import java.util.stream.Collectors;
 
 @Service
 public class EmployeeService {
@@ -58,7 +57,8 @@ public class EmployeeService {
     public Employee getEmployeeById(String id) throws ServiceUnavailableException {
         log.info("Fetching employee by ID: {} from server", id);
         try {
-            Callable<EmployeeResponse> callable = () -> restTemplate.getForObject(serverUrl + "/" + id, EmployeeResponse.class);
+            Callable<EmployeeResponse> callable =
+                    () -> restTemplate.getForObject(serverUrl + "/" + id, EmployeeResponse.class);
             EmployeeResponse response = NetworkHandler.call(callable, 3, 1000);
             Employee employee = response.getData();
             if (Objects.nonNull(employee)) {
@@ -81,10 +81,8 @@ public class EmployeeService {
         List<Employee> allEmployees = getAllEmployees();
 
         // In terms of scalability this responsibility could be pushed onto a DB query
-        Integer highestSalary = allEmployees.stream()
-                .mapToInt(Employee::getSalary)
-                .max()
-                .orElse(0);
+        Integer highestSalary =
+                allEmployees.stream().mapToInt(Employee::getSalary).max().orElse(0);
         log.info("Highest salary calculated: {}", highestSalary);
         return highestSalary;
     }
@@ -94,7 +92,7 @@ public class EmployeeService {
         List<Employee> allEmployees = getAllEmployees();
 
         // My assumption here is that for this task the server has limited Employees
-        // Therefore sorting ~30 employees is negligible 
+        // Therefore sorting ~30 employees is negligible
         // In terms of scalability this responsibility could be pushed onto a DB query
         List<String> topEarners = allEmployees.stream()
                 .sorted(Comparator.comparingInt(Employee::getSalary).reversed())
@@ -107,7 +105,8 @@ public class EmployeeService {
 
     public Employee createEmployee(EmployeeInput employeeInput) throws ServiceUnavailableException {
         log.info("Creating employee with input: {}", employeeInput);
-        Callable<EmployeeResponse> callable = () -> restTemplate.postForObject(serverUrl, employeeInput, EmployeeResponse.class);
+        Callable<EmployeeResponse> callable =
+                () -> restTemplate.postForObject(serverUrl, employeeInput, EmployeeResponse.class);
         EmployeeResponse response = NetworkHandler.call(callable, 3, 1000);
         Employee employee = response.getData();
         log.info("Employee created: {}", employee);
@@ -129,7 +128,8 @@ public class EmployeeService {
         headers.setContentType(MediaType.APPLICATION_JSON);
         HttpEntity<DeleteEmployeeInput> request = new HttpEntity<>(input, headers);
 
-        Callable<ResponseEntity<String>> callable = () -> restTemplate.exchange(serverUrl, HttpMethod.DELETE, request, String.class);
+        Callable<ResponseEntity<String>> callable =
+                () -> restTemplate.exchange(serverUrl, HttpMethod.DELETE, request, String.class);
         NetworkHandler.call(callable, 3, 1000);
         log.info("Deleted employee with ID: {}, name: {}", id, employee.getName());
         return employee.getName();
