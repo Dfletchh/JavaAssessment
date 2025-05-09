@@ -37,6 +37,8 @@ public class EmployeeService {
     public List<Employee> getAllEmployees() throws ServiceUnavailableException {
         log.info("Fetching all employees from server at {}", serverUrl);
         Callable<EmployeesResponse> callable = () -> restTemplate.getForObject(serverUrl, EmployeesResponse.class);
+
+        // NetworkHandler provides simple retry logic with exponential backoff
         EmployeesResponse response = NetworkHandler.call(callable, 3, 1000);
         List<Employee> employees = response.getData();
         log.info("Received {} employees from server", employees.size());
@@ -77,6 +79,8 @@ public class EmployeeService {
     public Integer getHighestSalary() throws ServiceUnavailableException {
         log.info("Calculating highest salary among employees");
         List<Employee> allEmployees = getAllEmployees();
+
+        // In terms of scalability this responsibility could be pushed onto a DB query
         Integer highestSalary = allEmployees.stream()
                 .mapToInt(Employee::getSalary)
                 .max()
@@ -88,6 +92,10 @@ public class EmployeeService {
     public List<String> getTopTenHighestEarningEmployeeNames() throws ServiceUnavailableException {
         log.info("Retrieving top 10 highest earning employee names");
         List<Employee> allEmployees = getAllEmployees();
+
+        // My assumption here is that for this task the server has limited Employees
+        // Therefore sorting ~30 employees is negligible 
+        // In terms of scalability this responsibility could be pushed onto a DB query
         List<String> topEarners = allEmployees.stream()
                 .sorted(Comparator.comparingInt(Employee::getSalary).reversed())
                 .limit(10)

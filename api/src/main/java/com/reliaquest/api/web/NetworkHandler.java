@@ -4,9 +4,15 @@ import java.util.concurrent.Callable;
 
 import com.reliaquest.api.exception.ServiceUnavailableException;
 
-/*
- * Simple retry wrapper for sanity check
- * The Server app has intentional rate limiting enabled
+
+/**
+ * Provides a simple retry mechanism for network calls.
+ * Note: The Server app has intentional rate limiting enabled
+ * 
+ * @param callable the callable to retry
+ * @param retries the number of retries
+ * @param delay the delay between retries in milliseconds
+ * @return the result of the callable
  */
 public class NetworkHandler {
     public static <T> T call(Callable<T> callable, int maxAttempts, int initialDelay) {
@@ -29,6 +35,6 @@ public class NetworkHandler {
                 }
             }
         }
-        return null;
+        return null; // should never occur
     }
 }
